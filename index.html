@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tìm Điểm Du Lịch Việt Nam</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    #map {
+      height: 600px;
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .poi-card {
+      transition: all 0.3s ease;
+    }
+    
+    .poi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15);
+    }
+    
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .marker-icon {
+      background-color: #3b82f6;
+      border: 3px solid white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">🗺️ Khám Phá Việt Nam</h1>
+      <p class="text-gray-600">Tìm kiếm điểm du lịch và khám phá các địa điểm thú vị gần đó</p>
+    </div>
+
+    <!-- Search Section -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nhập tên địa điểm ở Việt Nam:</label>
+          <input 
+            type="text" 
+            id="locationInput" 
+            placeholder="Ví dụ: Hà Nội, Đà Nẵng, Hội An, Nha Trang..."
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <div class="flex items-end">
+          <button 
+            id="searchBtn" 
+            class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-md"
+          >
+            🔍 Tìm kiếm
+          </button>
+        </div>
+      </div>
+      
+      <!-- Loading indicator -->
+      <div id="loading" class="hidden mt-4 flex items-center justify-center">
+        <div class="loading-spinner"></div>
+        <span class="ml-3 text-gray-600">Đang tìm kiếm...</span>
+      </div>
+      
+      <!-- Error message -->
+      <div id="errorMsg" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg"></div>
+      
+      <!-- Quick search buttons -->
+      <div class="mt-4">
+        <p class="text-sm text-gray-600 mb-2">Hoặc chọn địa điểm phổ biến:</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Hà Nội">
+            📍 Hà Nội
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Hội An">
+            🏮 Hội An
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Đà Nẵng">
+            🌊 Đà Nẵng
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Nha Trang">
+            🏖️ Nha Trang
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Sài Gòn">
+            🏙️ Sài Gòn
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Phú Quốc">
+            🏝️ Phú Quốc
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Huế">
+            👑 Huế
+          </button>
+          <button class="quick-search px-3 py-1 bg-gray-100 hover:bg-blue-100 rounded-full text-sm transition-colors" data-location="Đà Lạt">
+            🌹 Đà Lạt
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Bản đồ</h2>
+      <div id="map"></div>
+    </div>
+
+    <!-- Points of Interest Section -->
+    <div id="poiSection" class="hidden">
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">📍 5 Điểm Thú Vị Gần Đó</h2>
+        <div id="poiList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+    </div>
+    
+    <!-- Debug Info (toggle with Ctrl+Shift+D) -->
+    <div id="debugPanel" class="hidden fixed bottom-4 right-4 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono">
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-bold">🔍 Debug Info</span>
+        <button onclick="document.getElementById('debugPanel').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+      <div id="debugContent"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // Initialize map centered on Vietnam
+    let map = L.map('map').setView([16.0544, 108.2022], 6);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+    
+    let markers = [];
+    let currentLocation = null;
+    let searchCache = new Map(); // Cache for search results
+    
+    // Get DOM elements
+    const searchBtn = document.getElementById('searchBtn');
+    const locationInput = document.getElementById('locationInput');
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('errorMsg');
+    const poiSection = document.getElementById('poiSection');
+    const poiList = document.getElementById('poiList');
+    
+    // Search function
+    async function searchLocation() {
+      const query = locationInput.value.trim();
+      
+      if (!query) {
+        showError('Vui lòng nhập tên địa điểm!');
+        return;
+      }
+      
+      // Clear previous results
+      clearMarkers();
+      hideError();
+      poiSection.classList.add('hidden');
+      loading.classList.remove('hidden');
+      
+      try {
+        // Check cache first
+        const cacheKey = query.toLowerCase();
+        if (searchCache.has(cacheKey)) {
+          console.log('Using cached results for:', query);
+          const cached = searchCache.get(cacheKey);
+          currentLocation = cached.location;
+          map.setView([currentLocation.lat, currentLocation.lon], 14);
+          
+          const mainMarker = L.marker([currentLocation.lat, currentLocation.lon], {
+            icon: L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="background-color: #ef4444; border: 3px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">📍</div>`,
+              iconSize: [40, 40],
+              iconAnchor: [20, 40]
+            })
+          }).addTo(map);
+          
+          mainMarker.bindPopup(`<b>${query}</b><br>${currentLocation.name}`).openPopup();
+          markers.push(mainMarker);
+          
+          displayPOIs(cached.pois);
+          loading.classList.add('hidden');
+          return;
+        }
+        
+        // Step 1: Geocode the location using Nominatim
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Vietnam')}&format=json&limit=1&addressdetails=1`;
+        const geocodeResponse = await fetch(geocodeUrl, {
+          headers: {
+            'User-Agent': 'VietnamPOIFinder/1.0'
+          }
+        });
+        const geocodeData = await geocodeResponse.json();
+        
+        if (geocodeData.length === 0) {
+          throw new Error('Không tìm thấy địa điểm. Vui lòng thử lại với tên khác.');
+        }
+        
+        const location = geocodeData[0];
+        currentLocation = {
+          lat: parseFloat(location.lat),
+          lon: parseFloat(location.lon),
+          name: location.display_name
+        };
+        
+        // Center map on location
+        map.setView([currentLocation.lat, currentLocation.lon], 14);
+        
+        // Add main location marker
+        const mainMarker = L.marker([currentLocation.lat, currentLocation.lon], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="background-color: #ef4444; border: 3px solid white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 20px;">📍</div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+          })
+        }).addTo(map);
+        
+        mainMarker.bindPopup(`<b>${query}</b><br>${currentLocation.name}`).openPopup();
+        markers.push(mainMarker);
+        
+        // Step 2: Find points of interest using Overpass API
+        await findPointsOfInterest(currentLocation.lat, currentLocation.lon);
+        
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+    
+    // Find points of interest using Overpass API
+    async function findPointsOfInterest(lat, lon) {
+      try {
+        console.log('Searching for POIs near:', lat, lon);
+        
+        // Simplified query - search for ANY named place within radius
+        const radius = 3000; // 3km radius
+        const overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["name"](around:${radius},${lat},${lon});
+            way["name"](around:${radius},${lat},${lon});
+          );
+          out body 50;
+          >;
+          out skel qt;
+        `;
+        
+        const overpassUrl = 'https://overpass-api.de/api/interpreter';
+        const response = await fetch(overpassUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'data=' + encodeURIComponent(overpassQuery)
+        });
+        
+        // Check if response is OK
+        if (!response.ok) {
+          throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check content type to ensure we get JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response:', text.substring(0, 200));
+          throw new Error('Overpass API trả về lỗi. Vui lòng thử lại sau ít phút.');
+        }
+        
+        const data = await response.json();
+        
+        console.log('Overpass API returned:', data.elements ? data.elements.length : 0, 'results');
+        
+        if (!data.elements || data.elements.length === 0) {
+          // Fallback: Try a simpler query with larger radius
+          console.log('No POIs found from Overpass, trying fallback...');
+          await findPOIsFallback(lat, lon);
+          return;
+        }
+        
+        // Process and display POIs
+        const pois = processPOIs(data.elements);
+        displayPOIs(pois);
+        
+      } catch (error) {
+        console.error('POI search error:', error);
+        // Try fallback method
+        try {
+          console.log('Trying fallback POI search...');
+          await findPOIsFallback(lat, lon);
+        } catch (fallbackError) {
+          showError('Lỗi khi tìm kiếm điểm thú vị: ' + error.message);
+        }
+      }
+    }
+    
+    // Fallback method using Nominatim nearby search
+    async function findPOIsFallback(lat, lon) {
+      try {
+        console.log('Using fallback method with Nominatim...');
+        
+        // Always show the main location first
+        const defaultPOIs = [
+          {
+            name: currentLocation.name.split(',')[0] || 'Địa điểm chính',
+            type: 'Vị trí tìm kiếm',
+            lat: lat,
+            lon: lon,
+            icon: '📍',
+            description: 'Vị trí trung tâm bạn đã tìm kiếm',
+            address: currentLocation.name
+          }
+        ];
+        
+        // Search nearby in multiple categories
+        const categories = ['restaurant', 'cafe', 'museum', 'park', 'hotel', 'shop'];
+        
+        for (const category of categories) {
+          if (defaultPOIs.length >= 5) break;
+          
+          try {
+            const searchUrl = `https://nominatim.openstreetmap.org/search?q=${category}+near+${lat},${lon}&format=json&limit=3`;
+            await new Promise(resolve => setTimeout(resolve, 500)); // Rate limit
+            
+            const response = await fetch(searchUrl, {
+              headers: { 'User-Agent': 'VietnamPOIFinder/1.0' }
+            });
+            const places = await response.json();
+            
+            for (const place of places) {
+              if (defaultPOIs.length >= 5) break;
+              if (place.lat && place.lon && place.display_name) {
+                const name = place.display_name.split(',')[0];
+                // Avoid duplicates
+                if (!defaultPOIs.some(p => p.name === name)) {
+                  defaultPOIs.push({
+                    name: name,
+                    type: category.charAt(0).toUpperCase() + category.slice(1),
+                    lat: parseFloat(place.lat),
+                    lon: parseFloat(place.lon),
+                    icon: getIconForCategory(category),
+                    description: place.display_name,
+                    address: place.display_name
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Search failed for category:', category, err);
+          }
+        }
+        
+        console.log('Fallback found', defaultPOIs.length, 'POIs');
+        displayPOIs(defaultPOIs);
+        
+      } catch (error) {
+        console.error('Fallback error:', error);
+        // Show at least the main location
+        displayPOIs([{
+          name: currentLocation.name.split(',')[0] || 'Địa điểm',
+          type: 'Vị trí tìm kiếm',
+          lat: lat,
+          lon: lon,
+          icon: '📍',
+          description: 'Vị trí bạn đã tìm kiếm. Dữ liệu POI có thể không đầy đủ cho khu vực này.',
+          address: currentLocation.name
+        }]);
+      }
+    }
+    
+    // Helper function to get icon based on category
+    function getIconForCategory(category) {
+      const iconMap = {
+        'restaurant': '🍽️',
+        'cafe': '☕',
+        'museum': '🏛️',
+        'park': '🌳',
+        'hotel': '🏨',
+        'shop': '🛍️',
+        'tourism': '🎯',
+        'amenity': '📍',
+        'historic': '🏛️',
+        'leisure': '🎮'
+      };
+      return iconMap[category] || '📍';
+    }
+    
+    // Process POI data
+    function processPOIs(elements) {
+      const pois = [];
+      const seenNames = new Set();
+      
+      // Filter elements to only those with names and valid tags
+      const validElements = elements.filter(el => {
+        const tags = el.tags || {};
+        return tags.name && (tags.tourism || tags.amenity || tags.historic || tags.leisure || tags.shop || tags.building);
+      });
+      
+      console.log('Valid named elements:', validElements.length);
+      
+      for (const element of validElements) {
+        if (pois.length >= 5) break;
+        
+        let lat, lon;
+        
+        if (element.type === 'node') {
+          lat = element.lat;
+          lon = element.lon;
+        } else if (element.type === 'way' && element.center) {
+          lat = element.center.lat;
+          lon = element.center.lon;
+        } else if (element.type === 'way' && element.bounds) {
+          // Calculate center from bounds
+          lat = (element.bounds.minlat + element.bounds.maxlat) / 2;
+          lon = (element.bounds.minlon + element.bounds.maxlon) / 2;
+        } else {
+          continue;
+        }
+        
+        const tags = element.tags || {};
+        const name = tags.name || tags['name:vi'] || tags['name:en'] || 'Không có tên';
+        
+        // Skip unnamed or duplicate entries
+        if (name === 'Không có tên' || seenNames.has(name)) continue;
+        seenNames.add(name);
+        
+        // Determine type
+        let type = tags.tourism || tags.amenity || tags.historic || tags.leisure || tags.shop || tags.building || 'Địa điểm';
+        type = type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+        
+        // Get icon
+        const icon = getIconForType(tags);
+        
+        pois.push({
+          name,
+          type,
+          lat,
+          lon,
+          icon,
+          description: tags.description || tags['addr:full'] || `${type} tại ${currentLocation.name.split(',')[0]}`,
+          address: tags['addr:street'] || tags['addr:city'] || ''
+        });
+      }
+      
+      console.log('Processed POIs:', pois.length);
+      return pois;
+    }
+    
+    // Get icon based on POI type
+    function getIconForType(tags) {
+      if (tags.tourism) {
+        if (tags.tourism === 'hotel') return '🏨';
+        if (tags.tourism === 'museum') return '🏛️';
+        if (tags.tourism === 'attraction') return '⭐';
+        if (tags.tourism === 'viewpoint') return '👁️';
+        if (tags.tourism === 'information') return 'ℹ️';
+        if (tags.tourism === 'gallery') return '🖼️';
+        return '🎯';
+      }
+      if (tags.amenity) {
+        if (tags.amenity === 'restaurant') return '🍽️';
+        if (tags.amenity === 'cafe') return '☕';
+        if (tags.amenity === 'museum') return '🏛️';
+        if (tags.amenity === 'theatre') return '🎭';
+        if (tags.amenity === 'cinema') return '🎬';
+        if (tags.amenity === 'park') return '🌳';
+        if (tags.amenity === 'attraction') return '⭐';
+        return '📍';
+      }
+      if (tags.historic) {
+        if (tags.historic === 'monument') return '🗿';
+        if (tags.historic === 'castle') return '🏰';
+        if (tags.historic === 'memorial') return '⚔️';
+        return '🏛️';
+      }
+      if (tags.leisure) {
+        if (tags.leisure === 'park') return '🌳';
+        if (tags.leisure === 'garden') return '🌺';
+        if (tags.leisure === 'beach_resort') return '🏖️';
+        return '🎮';
+      }
+      return '📍';
+    }
+    
+    // Display POIs on map and list
+    function displayPOIs(pois) {
+      poiList.innerHTML = '';
+      
+      if (pois.length === 0) {
+        showError('Không tìm thấy điểm thú vị nào. Thử địa điểm khác!');
+        return;
+      }
+      
+      poiSection.classList.remove('hidden');
+      
+      pois.forEach((poi, index) => {
+        // Add marker to map
+        const marker = L.marker([poi.lat, poi.lon], {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: `<div class="marker-icon">${index + 1}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+          })
+        }).addTo(map);
+        
+        marker.bindPopup(`
+          <div class="p-2">
+            <div class="text-lg font-bold">${poi.icon} ${poi.name}</div>
+            <div class="text-sm text-gray-600">${poi.type}</div>
+            <div class="text-xs text-gray-500 mt-1">${poi.description}</div>
+          </div>
+        `);
+        
+        markers.push(marker);
+        
+        // Add to list
+        const card = document.createElement('div');
+        card.className = 'poi-card bg-white border border-gray-200 rounded-lg p-4 cursor-pointer';
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-3xl">${poi.icon}</div>
+            <div class="flex-1">
+              <div class="font-bold text-gray-800">${index + 1}. ${poi.name}</div>
+              <div class="text-sm text-blue-600">${poi.type}</div>
+              <div class="text-xs text-gray-500 mt-1">${poi.description}</div>
+            </div>
+          </div>
+        `;
+        
+        card.addEventListener('click', () => {
+          map.setView([poi.lat, poi.lon], 16);
+          marker.openPopup();
+        });
+        
+        poiList.appendChild(card);
+      });
+      
+        // Fit map bounds to show all markers
+      if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+      
+      // Cache the results
+      if (currentLocation && locationInput.value.trim()) {
+        searchCache.set(locationInput.value.trim().toLowerCase(), {
+          location: currentLocation,
+          pois: pois
+        });
+      }
+    }    // Clear all markers
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
+    
+    // Show error message
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.remove('hidden');
+    }
+    
+    // Hide error message
+    function hideError() {
+      errorMsg.classList.add('hidden');
+    }
+    
+    // Event listeners
+    searchBtn.addEventListener('click', searchLocation);
+    
+    locationInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchLocation();
+      }
+    });
+    
+    // Quick search buttons
+    document.querySelectorAll('.quick-search').forEach(btn => {
+      btn.addEventListener('click', () => {
+        locationInput.value = btn.dataset.location;
+        searchLocation();
+      });
+    });
+    
+    // Debug panel toggle
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        const panel = document.getElementById('debugPanel');
+        panel.classList.toggle('hidden');
+      }
+    });
+    
+    // Override console.log to show in debug panel
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const debugContent = document.getElementById('debugContent');
+      if (debugContent) {
+        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' ');
+        debugContent.innerHTML += `<div class="border-t border-gray-700 pt-1 mt-1">${msg}</div>`;
+        debugContent.scrollTop = debugContent.scrollHeight;
+      }
+    };
+    
+    // Example searches (optional demo)
+    console.log('Ví dụ địa điểm bạn có thể tìm:');
+    console.log('- Hà Nội');
+    console.log('- Hội An');
+    console.log('- Đà Nẵng');
+    console.log('- Nha Trang');
+    console.log('- Phố cổ Hà Nội');
+  </script>
+</body>
+</html>
