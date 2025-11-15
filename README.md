@@ -1,118 +1,130 @@
-# Tìm Điểm Du Lịch Việt Nam 🗺️
+# Vietnam POI Finder 🗺️
 
-Ứng dụng web cho phép người dùng tìm kiếm địa điểm ở Việt Nam và hiển thị 5 điểm thú vị (Points of Interest) gần đó trên bản đồ.
+A web application that allows users to search for locations in Vietnam and displays 5 nearby points of interest on an interactive map.
 
-## Tính Năng
+## Features
 
-✨ **Các tính năng chính:**
-- 🔍 Tìm kiếm địa điểm ở Việt Nam (thành phố, quận, phố, địa danh...)
-- 🗺️ Hiển thị vị trí trên bản đồ tương tác (Leaflet + OpenStreetMap)
-- 📍 Tự động tìm và hiển thị 5 điểm thú vị gần đó:
-  - Điểm du lịch (tourism)
-  - Nhà hàng, quán café (amenity)
-  - Di tích lịch sử (historic)
-- 💡 Giao diện đẹp, responsive với Tailwind CSS
-- 🎯 Click vào điểm thú vị để xem chi tiết trên bản đồ
+✨ **Key Features:**
+- 🔍 Search locations in Vietnam (cities, districts, streets, landmarks...)
+- 🗺️ Display locations on an interactive map (Leaflet + OpenStreetMap)
+- 📍 Automatically find and display 5 nearby points of interest:
+  - Tourist attractions (tourism)
+  - Restaurants and cafes (amenity)
+  - Historical sites (historic)
+- 💡 Beautiful, responsive UI with Tailwind CSS
+- 🎯 Click on points of interest to view details on the map
 
-## Công Nghệ Sử Dụng
+## Technologies Used
 
-- **Leaflet.js** - Thư viện bản đồ tương tác
-- **OpenStreetMap** - Dữ liệu bản đồ
-- **Nominatim API** - Geocoding (chuyển tên địa điểm thành tọa độ)
-- **Overpass API** - Tìm kiếm Points of Interest từ OpenStreetMap
+- **Leaflet.js** - Interactive map library
+- **OpenStreetMap** - Map data and tiles
+- **Nominatim API** - Geocoding (convert location names to coordinates)
+- **Overpass API** - Search for Points of Interest from OpenStreetMap
 - **Tailwind CSS** - Styling framework
 
-## Cách Chạy
+## How to Run
 
-### Phương pháp 1: Sử dụng Python HTTP Server
+### Method 1: Using Python HTTP Server
 
 ```bash
-# Mở terminal trong thư mục dự án
+# Open terminal in the project directory
 cd /workspaces/CT_Week5_24125093
 
-# Chạy server (Python 3)
+# Run the server (Python 3)
 python3 -m http.server 8000
 
-# Mở trình duyệt và truy cập:
+# Open your browser and visit:
 # http://localhost:8000/index.html
 ```
 
-### Phương pháp 2: Sử dụng npx serve
+### Method 2: Using npx serve
 
 ```bash
-# Chạy từ thư mục dự án
+# Run from the project directory
 npx serve . -l 5000
 
-# Mở trình duyệt và truy cập:
+# Open your browser and visit:
 # http://localhost:5000/index.html
 ```
 
-### Phương pháp 3: Mở trực tiếp file
+### Method 3: Open File Directly
 
-Bạn cũng có thể mở file `index.html` trực tiếp trong trình duyệt (double-click), nhưng nên dùng HTTP server để tránh lỗi CORS.
+You can also open the `index.html` file directly in your browser (double-click), but using an HTTP server is recommended to avoid CORS errors.
 
-## Hướng Dẫn Sử Dụng
+## User Guide
 
-1. **Nhập tên địa điểm** vào ô tìm kiếm (ví dụ: "Hà Nội", "Đà Nẵng", "Hội An", "Phố cổ Hà Nội")
-2. **Nhấn nút "🔍 Tìm kiếm"** hoặc Enter
-3. **Chờ ứng dụng** tìm kiếm và hiển thị:
-   - Vị trí chính trên bản đồ (marker đỏ 📍)
-   - 5 điểm thú vị gần đó (marker xanh với số thứ tự)
-   - Danh sách điểm thú vị bên dưới
-4. **Click vào card** của điểm thú vị để xem chi tiết trên bản đồ
+1. **Enter a location name** in the search box (e.g., "Hanoi", "Da Nang", "Hoi An", "Nha Trang")
+2. **Click the "🔍 Search" button** or press Enter
+3. **Wait for the app** to search and display:
+   - Main location on the map (red marker 📍)
+   - 5 nearby points of interest (blue markers with numbers)
+   - List of points of interest above the map
+4. **Click on a POI card** to view details on the map
 
-## Ví Dụ Tìm Kiếm
+## Example Searches
 
-Bạn có thể thử các địa điểm sau:
-- Hà Nội
-- Hội An
-- Đà Nẵng
+You can try these locations:
+- Hanoi (Hà Nội)
+- Hoi An (Hội An)
+- Da Nang (Đà Nẵng)
 - Nha Trang
-- Sài Gòn / TP Hồ Chí Minh
-- Phố cổ Hà Nội
-- Bãi biển Mỹ Khê
-- Chùa Một Cột
+- Saigon / Ho Chi Minh City (Sài Gòn)
+- Hanoi Old Quarter (Phố cổ Hà Nội)
+- My Khe Beach (Bãi biển Mỹ Khê)
+- One Pillar Pagoda (Chùa Một Cột)
+- Soc Trang (Sóc Trăng)
 
-## Cấu Trúc Dự Án
+## Project Structure
 
 ```
 CT_Week5_24125093/
-├── index.html          # Ứng dụng chính (HTML + CSS + JavaScript)
-├── main.html           # Firebase demo cũ
-└── README.md           # Tài liệu này
+├── index.html          # Main application (HTML + CSS + JavaScript)
+├── main.html           # Old Firebase demo
+├── README.md           # This documentation
+└── IMPROVEMENTS.md     # Detailed list of improvements made
 ```
 
-## API Sử Dụng
+## APIs Used
 
 ### 1. Nominatim API (Geocoding)
 - URL: `https://nominatim.openstreetmap.org/search`
-- Chức năng: Chuyển tên địa điểm → tọa độ (lat, lon)
-- Miễn phí, không cần API key
+- Function: Convert location name → coordinates (lat, lon)
+- Free, no API key required
 
 ### 2. Overpass API (POI Search)
 - URL: `https://overpass-api.de/api/interpreter`
-- Chức năng: Tìm điểm thú vị trong bán kính 5km
-- Miễn phí, không cần API key
+- Function: Find points of interest within 3km radius
+- Free, no API key required
 
-## Lưu Ý
+## Notes
 
-- ✅ Ứng dụng hoàn toàn miễn phí, không cần đăng ký API key
-- ✅ Hoạt động offline sau khi tải xong (trừ việc gọi API)
-- ⚠️ Nominatim có rate limit: 1 request/giây - đủ cho sử dụng bình thường
-- ⚠️ Kết quả phụ thuộc vào dữ liệu OpenStreetMap (có thể không đầy đủ ở một số vùng)
+- ✅ Completely free application, no API key registration needed
+- ✅ Works after initial load (except for API calls)
+- ⚠️ Nominatim has a rate limit: 1 request/second - sufficient for normal use
+- ⚠️ Results depend on OpenStreetMap data (may not be complete in some areas)
 
-## Xử Lý Lỗi
+## Troubleshooting
 
-Nếu không tìm thấy kết quả:
-1. Thử tên địa điểm cụ thể hơn (ví dụ: "Hà Nội" thay vì "HN")
-2. Thử địa điểm lớn hơn (thành phố thay vì phố nhỏ)
-3. Kiểm tra kết nối internet
-4. Một số vùng có thể có ít dữ liệu POI trên OpenStreetMap
+If you don't see results:
+1. Try a more specific location name (e.g., "Hanoi" instead of "HN")
+2. Try a larger location (city instead of small street)
+3. Check your internet connection
+4. Some areas may have limited POI data on OpenStreetMap
+5. Press `Ctrl+Shift+D` to open the debug panel and see what's happening
 
-## Tác Giả
+## Features & Improvements
 
-Dự án CT Week 5 - 24125093
+- ✨ Quick search buttons for popular destinations
+- 🎯 Search result caching for instant repeated searches
+- 🔄 Multiple fallback strategies ensure results
+- 📱 Fully responsive design
+- 🐛 Comprehensive error handling
+- 💡 Debug panel (Ctrl+Shift+D) for troubleshooting
+
+## Author
+
+CT Week 5 Project - Student ID: 24125093
 
 ## License
 
-MIT License - Tự do sử dụng cho mục đích học tập và cá nhân.
+MIT License - Free to use for educational and personal purposes.
