@@ -2,8 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Du Lịch Đê!</title>
+  <title>Tìm Điểm Du Lịch Việt Nam</title>
   
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
@@ -13,8 +14,23 @@
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
   <style>
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    }
+    
+    /* Ensure emojis and Vietnamese characters render properly */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    
+    h1, h2 {
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
     #map {
       height: 600px;
       width: 100%;
@@ -119,10 +135,12 @@
   <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="text-center mb-8">
-      <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-        🗺️ Khám Phá Việt Nam
+      <h1 class="text-5xl font-bold mb-3 inline-block">
+        <span class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
+          🗺️ Khám Phá Việt Nam
+        </span>
       </h1>
-      <p class="text-lg text-gray-600 mb-3">Tìm kiếm điểm du lịch và khám phá các địa điểm thú vị gần đó</p>
+      <!-- moved down -->
       <div class="flex justify-center gap-2 flex-wrap">
         <span class="feature-badge">🎯 Tìm kiếm nhanh</span>
         <span class="feature-badge">📍 5 điểm thú vị</span>
@@ -205,6 +223,17 @@
       </div>
     </div>
 
+    <!-- Weather Section -->
+    <div id="weatherSection" class="hidden">
+      <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-8 mb-6 border-2 border-blue-200">
+        <h2 class="text-3xl font-bold text-gray-800 mb-5 flex items-center gap-3">
+          <span class="text-4xl">🌤️</span>
+          <span>Weather Information</span>
+        </h2>
+        <div id="weatherContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+    </div>
+
     <!-- Points of Interest Section (moved before map) -->
     <div id="poiSection" class="hidden">
       <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 border border-gray-100">
@@ -255,6 +284,9 @@
     let currentLocation = null;
     let searchCache = new Map(); // Cache for search results
     
+    // OpenWeatherMap API key (free tier)
+    const WEATHER_API_KEY = '4d8fb5b93d4af21d66a2948710284366'; // Demo KEY
+    
     // Get DOM elements
     const searchBtn = document.getElementById('searchBtn');
     const locationInput = document.getElementById('locationInput');
@@ -262,6 +294,8 @@
     const errorMsg = document.getElementById('errorMsg');
     const poiSection = document.getElementById('poiSection');
     const poiList = document.getElementById('poiList');
+    const weatherSection = document.getElementById('weatherSection');
+    const weatherContent = document.getElementById('weatherContent');
     
     // Search function
     async function searchLocation() {
@@ -272,13 +306,12 @@
         return;
       }
       
-      // Clear previous results
-      clearMarkers();
-      hideError();
-      poiSection.classList.add('hidden');
-      loading.classList.remove('hidden');
-      
-      try {
+        // Clear previous results
+        clearMarkers();
+        hideError();
+        poiSection.classList.add('hidden');
+        weatherSection.classList.add('hidden');
+        loading.classList.remove('hidden');      try {
         // Check cache first
         const cacheKey = query.toLowerCase();
         if (searchCache.has(cacheKey)) {
@@ -301,6 +334,11 @@
           
           displayPOIs(cached.pois);
           loading.classList.add('hidden');
+          
+          // Show cached weather if available
+          if (cached.weather) {
+            displayWeather(cached.weather);
+          }
           return;
         }
         
@@ -343,11 +381,118 @@
         // Step 2: Find points of interest using Overpass API
         await findPointsOfInterest(currentLocation.lat, currentLocation.lon);
         
+        // Step 3: Fetch weather data
+        await fetchWeather(currentLocation.lat, currentLocation.lon, query);
+        
       } catch (error) {
         showError(error.message);
       } finally {
         loading.classList.add('hidden');
       }
+    }
+    
+    // Fetch weather data from OpenWeatherMap API
+    async function fetchWeather(lat, lon, locationName) {
+      try {
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`;
+        
+        const response = await fetch(weatherUrl);
+        if (!response.ok) {
+          console.warn('Weather API error:', response.status);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('Weather data:', data);
+        
+        const weatherData = {
+          temp: Math.round(data.main.temp),
+          feels_like: Math.round(data.main.feels_like),
+          humidity: data.main.humidity,
+          pressure: data.main.pressure,
+          description: data.weather[0].description,
+          icon: data.weather[0].icon,
+          wind_speed: data.wind.speed,
+          clouds: data.clouds.all,
+          location: locationName
+        };
+        
+        displayWeather(weatherData);
+        
+        // Cache weather data
+        if (locationInput.value.trim()) {
+          const cacheKey = locationInput.value.trim().toLowerCase();
+          const cached = searchCache.get(cacheKey) || {};
+          cached.weather = weatherData;
+          searchCache.set(cacheKey, cached);
+        }
+        
+      } catch (error) {
+        console.error('Weather fetch error:', error);
+        // Don't show error to user, weather is optional feature
+      }
+    }
+    
+    // Display weather information
+    function displayWeather(weather) {
+      weatherSection.classList.remove('hidden');
+      
+      const iconUrl = `https://openweathermap.org/img/wn/${weather.icon}@2x.png`;
+      
+      weatherContent.innerHTML = `
+        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <div class="text-5xl font-bold text-gray-800">${weather.temp}°C</div>
+              <div class="text-sm text-gray-600 mt-1">Feels like ${weather.feels_like}°C</div>
+            </div>
+            <img src="${iconUrl}" alt="${weather.description}" class="w-20 h-20">
+          </div>
+          <div class="text-lg font-semibold text-gray-700 capitalize">${weather.description}</div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">💨</span>
+            <div>
+              <div class="text-sm text-gray-600">Wind Speed</div>
+              <div class="text-2xl font-bold text-gray-800">${weather.wind_speed} m/s</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">☁️</span>
+            <div>
+              <div class="text-sm text-gray-600">Cloudiness</div>
+              <div class="text-2xl font-bold text-gray-800">${weather.clouds}%</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">💧</span>
+            <div>
+              <div class="text-sm text-gray-600">Humidity</div>
+              <div class="text-2xl font-bold text-gray-800">${weather.humidity}%</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">🌡️</span>
+            <div>
+              <div class="text-sm text-gray-600">Pressure</div>
+              <div class="text-2xl font-bold text-gray-800">${weather.pressure} hPa</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
+          <div class="text-2xl font-bold mb-2">📍 ${weather.location}</div>
+          <div class="text-sm opacity-90">Current weather conditions</div>
+          <div class="mt-4 pt-4 border-t border-white border-opacity-30">
+            <div class="text-xs opacity-75">Data from OpenWeatherMap</div>
+          </div>
+        </div>
+      `;
     }
     
     // Find points of interest using Overpass API
@@ -608,7 +753,6 @@
     // Display POIs on map and list
     function displayPOIs(pois) {
       poiList.innerHTML = '';
-      
       if (pois.length === 0) {
         showError('Không tìm thấy điểm thú vị nào. Thử địa điểm khác!');
         return;
@@ -673,7 +817,8 @@
       if (currentLocation && locationInput.value.trim()) {
         searchCache.set(locationInput.value.trim().toLowerCase(), {
           location: currentLocation,
-          pois: pois
+          pois: pois,
+          weather: searchCache.get(locationInput.value.trim().toLowerCase())?.weather
         });
       }
     }    // Clear all markers
