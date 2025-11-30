@@ -47,6 +47,43 @@ npx serve . -l 5000
 # http://localhost:5000/index.html
 ```
 
+### Backend (optional, recommended for production)
+
+This project includes a small Python backend proxy (FastAPI) that can be used to:
+- Proxy weather requests to OpenWeatherMap so you don't expose the API key client-side
+- Proxy translation requests to public LibreTranslate/Argos endpoints (adds CORS and fallback handling)
+
+Files:
+- `backend/main.py` - FastAPI app with `/api/weather` and `/api/translate`
+- `backend/requirements.txt` - Python dependencies
+- `backend/.env.example` - example environment variables
+
+To run the backend locally:
+
+```bash
+# 1) Create a virtualenv (recommended)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2) Install dependencies
+pip install -r backend/requirements.txt
+
+# 3) Copy and set your env vars
+cp backend/.env.example backend/.env
+# Edit backend/.env and set OPENWEATHERMAP_KEY (register at https://openweathermap.org/ if you don't have one)
+
+# 4) Run the app with uvicorn (listens on :8001 by default)
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8001
+```
+
+Client changes (optional):
+- If you run the backend locally, change your client weather fetch to POST to `/api/weather` on your backend (e.g., `http://localhost:8001/api/weather`) instead of calling `api.openweathermap.org` directly.
+
+Registration notes (manual work):
+- OpenWeatherMap: create a free account and generate an API key at https://openweathermap.org/ — required to use the `/api/weather` endpoint.
+- LibreTranslate / Argos: public endpoints used by `/api/translate` are free and do not require keys, but public instances may rate-limit or impose CORS restrictions; if you need reliable translation, consider a self-hosted LibreTranslate or a paid translation API.
+
+
 ### Method 3: Open File Directly
 
 You can also open the `index.html` file directly in your browser (double-click), but using an HTTP server is recommended to avoid CORS errors.

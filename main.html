@@ -26,6 +26,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
+  <!-- BEGIN: Quick Translator (English -> Vietnamese) -->
+<div id="quickTranslator" class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+  <h3 class="text-lg font-semibold mb-3">Dịch nhanh (EN → VI)</h3>
+
+  <div class="grid gap-3 md:grid-cols-[1fr_auto]">
+    <textarea id="txtToTranslate" rows="3"
+      placeholder="Type English text here... / Viết tiếng Anh ở đây..."
+      class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-100 resize-none"></textarea>
+
+    <div class="flex flex-col gap-2">
+      <button id="btnTranslate" class="px-5 py-3 rounded-xl bg-brand-600 text-white font-semibold shadow hover:bg-brand-700">
+        Dịch → VN
+      </button>
+      <button id="btnClear" class="px-5 py-3 rounded-xl bg-slate-100 text-sm font-medium hover:bg-slate-200">
+        Xóa
+      </button>
+    </div>
+  </div>
+
+  <div id="translateStatus" class="mt-4 text-sm text-slate-500 hidden"></div>
+
+  <div id="translateResult" class="mt-4 hidden">
+    <label class="text-xs font-semibold text-slate-600">Kết quả (Tiếng Việt)</label>
+    <div id="translatedText" class="mt-2 p-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"></div>
+  </div>
+</div>
+<!-- END: Quick Translator -->
+
   <div class="max-w-4xl mx-auto p-6">
     <!-- Header -->
     <header class="flex items-center justify-between">

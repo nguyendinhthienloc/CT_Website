@@ -133,6 +133,8 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
   <div class="container mx-auto px-4 py-8">
+    
+
     <!-- Header -->
     <div class="text-center mb-8">
       <h1 class="text-5xl font-bold mb-3 inline-block">
@@ -147,6 +149,34 @@
         <span class="feature-badge">🗨️ Miễn phí 100%</span>
       </div>
     </div>
+
+    <!-- BEGIN: Quick Translator (EN → VI) -->
+    <div id="quickTranslator" class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+      <h3 class="text-lg font-semibold mb-3">Dịch nhanh (EN → VI)</h3>
+
+      <div class="grid gap-3 md:grid-cols-[1fr_auto]">
+        <textarea id="txtToTranslate" rows="3"
+          placeholder="Type English text here... / Viết tiếng Anh ở đây..."
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 resize-none"></textarea>
+
+        <div class="flex flex-col gap-2">
+          <button id="btnTranslate" class="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700">
+            Dịch → VN
+          </button>
+          <button id="btnClear" class="px-5 py-3 rounded-xl bg-slate-100 text-sm font-medium hover:bg-slate-200">
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <div id="translateStatus" class="mt-4 text-sm text-slate-500 hidden"></div>
+
+      <div id="translateResult" class="mt-4 hidden">
+        <label class="text-xs font-semibold text-slate-600">Kết quả (Tiếng Việt)</label>
+        <div id="translatedText" class="mt-2 p-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-800"></div>
+      </div>
+    </div>
+    <!-- END: Quick Translator -->
 
     <!-- Search Section -->
     <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 border border-gray-100">
@@ -343,11 +373,11 @@
         }
         
         // Step 1: Geocode the location using Nominatim
-        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Vietnam')}&format=json&limit=1&addressdetails=1`;
-        const geocodeResponse = await fetch(geocodeUrl, {
-          headers: {
-            'User-Agent': 'VietnamPOIFinder/1.0'
-          }
+        // Geocode via backend proxy
+        const geocodeResponse = await fetch('http://localhost:8001/api/geocode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: query + ', Vietnam', limit: 1 })
         });
         const geocodeData = await geocodeResponse.json();
         
@@ -378,10 +408,10 @@
         mainMarker.bindPopup(`<b>${query}</b><br>${currentLocation.name}`).openPopup();
         markers.push(mainMarker);
         
-        // Step 2: Find points of interest using Overpass API
+        // Step 2: Find points of interest via backend proxy (Overpass + fallback)
         await findPointsOfInterest(currentLocation.lat, currentLocation.lon);
         
-        // Step 3: Fetch weather data
+        // Step 3: Fetch weather data via backend proxy
         await fetchWeather(currentLocation.lat, currentLocation.lon, query);
         
       } catch (error) {
@@ -394,9 +424,12 @@
     // Fetch weather data from OpenWeatherMap API
     async function fetchWeather(lat, lon, locationName) {
       try {
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`;
-        
-        const response = await fetch(weatherUrl);
+        // Call local backend proxy for weather
+        const response = await fetch('http://localhost:8001/api/weather', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon })
+        });
         if (!response.ok) {
           console.warn('Weather API error:', response.status);
           return;
@@ -498,142 +531,44 @@
     // Find points of interest using Overpass API
     async function findPointsOfInterest(lat, lon) {
       try {
-        console.log('Searching for POIs near:', lat, lon);
-        
-        // Simplified query - search for ANY named place within radius
-        const radius = 3000; // 3km radius
-        const overpassQuery = `
-          [out:json][timeout:25];
-          (
-            node["name"](around:${radius},${lat},${lon});
-            way["name"](around:${radius},${lat},${lon});
-          );
-          out body 50;
-          >;
-          out skel qt;
-        `;
-        
-        const overpassUrl = 'https://overpass-api.de/api/interpreter';
-        const response = await fetch(overpassUrl, {
+        console.log('Searching for POIs via backend for:', lat, lon);
+        const response = await fetch('http://localhost:8001/api/poi', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: 'data=' + encodeURIComponent(overpassQuery)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon, radius: 3000 })
         });
-        
-        // Check if response is OK
+
         if (!response.ok) {
-          throw new Error(`Overpass API error: ${response.status} ${response.statusText}`);
+          throw new Error('POI proxy error: ' + response.status);
         }
-        
-        // Check content type to ensure we get JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          console.error('Non-JSON response:', text.substring(0, 200));
-          throw new Error('Overpass API trả về lỗi. Vui lòng thử lại sau ít phút.');
-        }
-        
+
         const data = await response.json();
-        
-        console.log('Overpass API returned:', data.elements ? data.elements.length : 0, 'results');
-        
-        if (!data.elements || data.elements.length === 0) {
-          // Fallback: Try a simpler query with larger radius
-          console.log('No POIs found from Overpass, trying fallback...');
-          await findPOIsFallback(lat, lon);
+
+        if (data.fallback && data.pois) {
+          console.log('Using fallback POIs from backend');
+          displayPOIs(data.pois);
           return;
         }
-        
-        // Process and display POIs
-        const pois = processPOIs(data.elements);
-        displayPOIs(pois);
+
+        if (data.elements && data.elements.length > 0) {
+          const pois = processPOIs(data.elements);
+          displayPOIs(pois);
+          return;
+        }
+
+        // No results returned
+        console.log('No POIs returned from backend');
+        showError('Không tìm thấy điểm thú vị.');
         
       } catch (error) {
         console.error('POI search error:', error);
-        // Try fallback method
-        try {
-          console.log('Trying fallback POI search...');
-          await findPOIsFallback(lat, lon);
-        } catch (fallbackError) {
-          showError('Lỗi khi tìm kiếm điểm thú vị: ' + error.message);
-        }
+        showError('Lỗi khi tìm kiếm điểm thú vị: ' + (error.message || error));
       }
     }
     
-    // Fallback method using Nominatim nearby search
+    // Fallback handled server-side now; keep this function as a no-op placeholder
     async function findPOIsFallback(lat, lon) {
-      try {
-        console.log('Using fallback method with Nominatim...');
-        
-        // Always show the main location first
-        const defaultPOIs = [
-          {
-            name: currentLocation.name.split(',')[0] || 'Địa điểm chính',
-            type: 'Vị trí tìm kiếm',
-            lat: lat,
-            lon: lon,
-            icon: '📍',
-            description: 'Vị trí trung tâm bạn đã tìm kiếm',
-            address: currentLocation.name
-          }
-        ];
-        
-        // Search nearby in multiple categories
-        const categories = ['restaurant', 'cafe', 'museum', 'park', 'hotel', 'shop'];
-        
-        for (const category of categories) {
-          if (defaultPOIs.length >= 5) break;
-          
-          try {
-            const searchUrl = `https://nominatim.openstreetmap.org/search?q=${category}+near+${lat},${lon}&format=json&limit=3`;
-            await new Promise(resolve => setTimeout(resolve, 500)); // Rate limit
-            
-            const response = await fetch(searchUrl, {
-              headers: { 'User-Agent': 'VietnamPOIFinder/1.0' }
-            });
-            const places = await response.json();
-            
-            for (const place of places) {
-              if (defaultPOIs.length >= 5) break;
-              if (place.lat && place.lon && place.display_name) {
-                const name = place.display_name.split(',')[0];
-                // Avoid duplicates
-                if (!defaultPOIs.some(p => p.name === name)) {
-                  defaultPOIs.push({
-                    name: name,
-                    type: category.charAt(0).toUpperCase() + category.slice(1),
-                    lat: parseFloat(place.lat),
-                    lon: parseFloat(place.lon),
-                    icon: getIconForCategory(category),
-                    description: place.display_name,
-                    address: place.display_name
-                  });
-                }
-              }
-            }
-          } catch (err) {
-            console.warn('Search failed for category:', category, err);
-          }
-        }
-        
-        console.log('Fallback found', defaultPOIs.length, 'POIs');
-        displayPOIs(defaultPOIs);
-        
-      } catch (error) {
-        console.error('Fallback error:', error);
-        // Show at least the main location
-        displayPOIs([{
-          name: currentLocation.name.split(',')[0] || 'Địa điểm',
-          type: 'Vị trí tìm kiếm',
-          lat: lat,
-          lon: lon,
-          icon: '📍',
-          description: 'Vị trí bạn đã tìm kiếm. Dữ liệu POI có thể không đầy đủ cho khu vực này.',
-          address: currentLocation.name
-        }]);
-      }
+      console.log('Client fallback disabled; server-side fallback should handle missing POIs.');
     }
     
     // Helper function to get icon based on category
@@ -882,6 +817,99 @@
     console.log('- Đà Nẵng');
     console.log('- Nha Trang');
     console.log('- Phố cổ Hà Nội');
+
+    // Quick Translator (EN → VI) functionality with fallback endpoints and improved error handling
+    try {
+      const txtToTranslate = document.getElementById('txtToTranslate');
+      const btnTranslate = document.getElementById('btnTranslate');
+      const btnClear = document.getElementById('btnClear');
+      const translateStatus = document.getElementById('translateStatus');
+      const translateResult = document.getElementById('translateResult');
+      const translatedText = document.getElementById('translatedText');
+
+      // Try backend proxy first (if running locally), then public endpoints
+      const TRANSLATE_ENDPOINTS = [
+        'http://localhost:8001/api/translate', // local FastAPI proxy (recommended)
+        'https://translate.argosopentech.com/translate',
+        'https://libretranslate.com/translate'
+      ];
+
+      async function translateText(text) {
+        const payload = { q: text, source: 'en', target: 'vi', format: 'text' };
+
+        for (const url of TRANSLATE_ENDPOINTS) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s
+
+            // If calling our local backend proxy, it expects same JSON shape but on a different URL
+            const isLocalProxy = url.startsWith('http://localhost');
+            const fetchOptions = {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              signal: controller.signal
+            };
+
+            const res = await fetch(url, fetchOptions);
+            clearTimeout(timeoutId);
+
+            // If 400, try to read JSON error details and include them
+            if (res.status === 400) {
+              let bodyText = '';
+              try { bodyText = await res.text(); } catch (e) { /* ignore */ }
+              throw new Error(`400 Bad Request from ${url}: ${bodyText}`);
+            }
+
+            if (!res.ok) {
+              throw new Error(`${res.status} ${res.statusText} from ${url}`);
+            }
+
+            const json = await res.json();
+            // LibreTranslate returns { translatedText }, Argos returns { translatedText }
+            return json.translatedText || json.result || '';
+          } catch (err) {
+            console.warn('Translate endpoint failed', url, err && err.message ? err.message : err);
+            // try next endpoint
+          }
+        }
+
+        throw new Error('All translation endpoints failed (CORS/rate-limit/network).');
+      }
+
+      if (btnTranslate && txtToTranslate) {
+        btnTranslate.addEventListener('click', async () => {
+          const text = (txtToTranslate.value || '').trim();
+          if (!text) return;
+          btnTranslate.disabled = true;
+          translateStatus.textContent = 'Đang dịch...';
+          translateStatus.classList.remove('hidden');
+          translateResult.classList.add('hidden');
+
+          try {
+            const result = await translateText(text);
+            translatedText.textContent = result || '(Không có kết quả)';
+            translateResult.classList.remove('hidden');
+            translateStatus.textContent = 'Hoàn thành';
+            setTimeout(() => translateStatus.classList.add('hidden'), 1400);
+          } catch (err) {
+            console.error('Translate error', err);
+            translateStatus.textContent = 'Lỗi dịch: ' + (err.message || 'Không thể dịch');
+          } finally {
+            btnTranslate.disabled = false;
+          }
+        });
+
+        btnClear.addEventListener('click', () => {
+          txtToTranslate.value = '';
+          translatedText.textContent = '';
+          translateResult.classList.add('hidden');
+          translateStatus.classList.add('hidden');
+        });
+      }
+    } catch (e) {
+      console.warn('Quick translator init failed', e);
+    }
   </script>
 </body>
 </html>
