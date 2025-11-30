@@ -223,7 +223,27 @@
       </div>
     </div>
 
-    <!-- Weather Section -->
+      <!-- Translation Bar (English → Vietnamese) -->
+      <div id="translateSection" class="mt-6 bg-white rounded-2xl p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold mb-3">🔤 Dịch nhanh (English → Tiếng Việt)</h3>
+        <div class="flex gap-3 flex-col sm:flex-row">
+          <textarea id="translateInput" rows="2" placeholder="Paste or type English text here..." class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 resize-none"></textarea>
+          <div class="flex-shrink-0 flex flex-col items-stretch gap-3">
+            <button id="translateBtn" class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold shadow hover:from-green-600 active:scale-95">Dịch</button>
+            <button id="clearTranslateBtn" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl">Xoá</button>
+          </div>
+        </div>
+        <div id="translateResult" class="mt-4 hidden bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="text-sm text-gray-500 mb-2">Kết quả (Tiếng Việt):</div>
+          <div id="translatedText" class="text-gray-900 font-medium"></div>
+          <div class="mt-3 flex gap-2">
+            <button id="copyTranslateBtn" class="px-3 py-2 bg-blue-600 text-white rounded-md text-sm">Sao chép</button>
+            <button id="openInNewBtn" class="px-3 py-2 bg-white border text-sm rounded-md">Mở trong tab mới</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weather Section -->
     <div id="weatherSection" class="hidden">
       <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-8 mb-6 border-2 border-blue-200">
         <h2 class="text-3xl font-bold text-gray-800 mb-5 flex items-center gap-3">
@@ -874,6 +894,57 @@
         debugContent.scrollTop = debugContent.scrollHeight;
       }
     };
+
+    // --- Translation feature (calls backend) ---
+    const TRANSLATE_API = 'http://localhost:5001/translate'; // backend now runs on 5001
+    const translateBtn = document.getElementById('translateBtn');
+    const clearTranslateBtn = document.getElementById('clearTranslateBtn');
+    const translateInput = document.getElementById('translateInput');
+    const translateResult = document.getElementById('translateResult');
+    const translatedText = document.getElementById('translatedText');
+    const copyTranslateBtn = document.getElementById('copyTranslateBtn');
+    const openInNewBtn = document.getElementById('openInNewBtn');
+
+    async function doTranslate() {
+      const text = (translateInput.value || '').trim();
+      if (!text) return;
+      translateBtn.disabled = true;
+      translateBtn.textContent = 'Đang dịch...';
+      translateResult.classList.add('hidden');
+      try {
+        const resp = await fetch(TRANSLATE_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Lỗi dịch');
+        translatedText.textContent = data.translated;
+        translateResult.classList.remove('hidden');
+      } catch (err) {
+        alert('Lỗi dịch: ' + err.message);
+      } finally {
+        translateBtn.disabled = false;
+        translateBtn.textContent = 'Dịch';
+      }
+    }
+
+    translateBtn.addEventListener('click', doTranslate);
+    translateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate(); });
+    clearTranslateBtn.addEventListener('click', () => {
+      translateInput.value = '';
+      translatedText.textContent = '';
+      translateResult.classList.add('hidden');
+      translateInput.focus();
+    });
+    copyTranslateBtn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(translatedText.textContent || ''); alert('Đã sao chép'); }
+      catch { alert('Không thể sao chép'); }
+    });
+    openInNewBtn.addEventListener('click', () => {
+      const url = 'https://translate.google.com/?sl=en&tl=vi&text=' + encodeURIComponent(translateInput.value || '') + '&op=translate';
+      window.open(url, '_blank');
+    });
     
     // Example searches (optional demo)
     console.log('Ví dụ địa điểm bạn có thể tìm:');
