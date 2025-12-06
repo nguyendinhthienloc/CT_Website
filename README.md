@@ -24,67 +24,86 @@ A web application that allows users to search for locations in Vietnam and displ
 
 ## How to Run
 
-### Method 1: Using Python HTTP Server
+### 🚀 Quick Start (Frontend Only)
+
+The simplest way to run the application without backend features:
 
 ```bash
-# Open terminal in the project directory
+# Navigate to project directory
 cd /workspaces/CT_Week5_24125093
 
-# Run the server (Python 3)
+# Start a local web server
 python3 -m http.server 8001
 
 # Open your browser and visit:
 # http://localhost:8001/frontend/index.html
 ```
-<!-- Optional: you may use any static server, but the repo expects frontend on port 8001 -->
 
-### Backend (optional, recommended for production)
+**What works:**
+- ✅ Location search and mapping
+- ✅ Points of interest discovery
+- ✅ Interactive map features
+- ✅ All core functionality
 
-This project includes a small Python backend proxy (FastAPI) that can be used to:
-- Proxy weather requests to OpenWeatherMap so you don't expose the API key client-side
-- Proxy translation requests to public LibreTranslate/Argos endpoints (adds CORS and fallback handling)
+**What's disabled:**
+- ❌ Weather information (requires backend)
+- ❌ Translation features (requires backend)
 
-Files:
-- `backend/main.py` - FastAPI app with `/api/weather` and `/api/translate`
-- `backend/requirements.txt` - Python dependencies
-- `backend/.env.example` - example environment variables
+### 🔥 Full Stack Setup (Frontend + Backend)
 
-To run the backend locally:
+For complete functionality including weather and translation features, run both frontend and backend:
+
+**Terminal 1 - Backend Setup:**
 
 ```bash
-# 1) Create a virtualenv (recommended)
-python3 -m venv .venv
-source .venv/bin/activate
+# 1. Navigate to project directory
+cd /workspaces/CT_Week5_24125093
 
-# 2) Install dependencies
+# 2. Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# 3. Install Python dependencies
 pip install -r backend/requirements.txt
 
-# 3) Copy and set your env vars
+# 4. Set up environment variables (optional but recommended)
 cp backend/.env.example backend/.env
-# Edit backend/.env and set OPENWEATHERMAP_KEY (register at https://openweathermap.org/ if you don't have one)
+# Edit backend/.env and add your OPENWEATHERMAP_KEY
+# Get a free key at: https://openweathermap.org/
 
-# 4) Run the app with uvicorn (listens on :8000 for this project)
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+# 5. Start the backend server
+python backend/main.py
+# Backend will run on http://localhost:8000
 ```
 
-Client changes (optional):
-- If you run the backend locally, the client is already configured to call the backend API base at `http://localhost:8000` for `/api/*` endpoints. Do not expose OpenWeatherMap API keys to the browser.
+**Terminal 2 - Frontend Setup:**
 
-Registration notes (manual work):
-- OpenWeatherMap: create a free account and generate an API key at https://openweathermap.org/ — required to use the `/api/weather` endpoint.
-- LibreTranslate / Argos: public endpoints used by `/api/translate` are free and do not require keys, but public instances may rate-limit or impose CORS restrictions; if you need reliable translation, consider a self-hosted LibreTranslate or a paid translation API.
+```bash
+# 1. Navigate to project directory
+cd /workspaces/CT_Week5_24125093
 
-Translation library (py-googletrans):
-- This backend can optionally use `py-googletrans` (`googletrans` package) for server-side translation without API keys. That library is included in `backend/requirements.txt` as `googletrans==3.1.0a0`.
-- `py-googletrans` is an unofficial wrapper and may break if Google changes their internal API. It is a good no-key option for development and light usage.
-- If `googletrans` is available, the backend will use it automatically for `/api/translate`. If it's not available or fails, the backend falls back to public LibreTranslate/Argos endpoints.
+# 2. Start the frontend server
+python3 -m http.server 8001
 
-No registration is required to use `py-googletrans`. For production-grade translation, consider a paid API (Google Cloud Translate, Azure Translator) and proxy the requests server-side with proper key management.
+# 3. Open browser to:
+# http://localhost:8001/frontend/index.html
+```
 
+**Backend Features:**
+- 🌤️ Weather API proxy (`/api/weather`) - Requires OpenWeatherMap API key
+- 🌍 Translation API (`/api/translate`) - Uses py-googletrans (no key needed)
+- 🔒 Secure API key handling (keys stay on server)
 
-### Method 3: Open File Directly
+**API Endpoints:**
+- `GET /api/weather?lat={lat}&lon={lon}` - Get weather for coordinates
+- `POST /api/translate` - Translate text (body: `{text, dest}`)
 
-You can also open the `frontend/index.html` file directly in your browser (double-click), but using an HTTP server is recommended to avoid CORS errors.
+### 📁 Alternative: Direct File Access
+
+Open `frontend/index.html` directly in your browser, but note:
+- ⚠️ May have CORS issues with some APIs
+- ⚠️ Backend features won't work
+- ✅ Use HTTP server method for best experience
 
 ## User Guide
 
@@ -182,39 +201,33 @@ CT Week 5 Project - Student ID: 24125093
 
 MIT License - Free to use for educational and personal purposes.
 
-## Quick Two-Terminal Run (recommended)
+## 🐳 Running in Development Containers / Codespaces
 
-Run the project locally using two terminals:
+This project is configured for GitHub Codespaces and VS Code Dev Containers:
 
-Terminal A — Backend
+```bash
+# The environment is already set up, just run:
 
-1. Create virtual environment and install deps
-  ```bash
-  python -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt
-  ```
-2. Export env var(s):
-  ```bash
-  export OPENWEATHERMAP_KEY=YOUR_KEY
-  ```
-3. Start backend:
-  ```bash
-  python backend/main.py
-  # or:
-  uvicorn backend.main:app --host 0.0.0.0 --port 8000
-  ```
+# Terminal 1 - Backend
+source .venv/bin/activate  # Virtual environment should exist
+python backend/main.py
 
-Terminal B — Frontend
+# Terminal 2 - Frontend  
+python3 -m http.server 8001
 
-1. Serve static files from project root:
-  ```bash
-  python -m http.server 8001
-  ```
-2. Open browser at:
-  ```
-  http://localhost:8001/frontend/index.html
-  ```
+# Access via forwarded ports or direct URLs
+```
 
-Notes:
+**Port Configuration:**
+- `8000` - Backend API (FastAPI)
+- `8001` - Frontend static server
+- `5001` - Flask legacy server (optional)
 
-* Backend API base URL: http://localhost:8000
-* Frontend static server: http://localhost:8001
+## 📚 Additional Documentation
+
+For more detailed information, see the `docs/` directory:
+- `docs/RUNNING.md` - Detailed running instructions
+- `docs/FIREBASE_AUTH_GUIDE.md` - Firebase authentication setup
+- `docs/IMPROVEMENTS.md` - Feature improvements log
+- `docs/TESTING_STEPS.md` - Testing procedures
+- `docs/SERVICES_RUNNING.md` - Service management guide
