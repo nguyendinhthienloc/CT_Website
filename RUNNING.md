@@ -13,7 +13,7 @@ Prerequisites
 Open PowerShell and run:
 
 ```powershell
-cd 'D:\Github Projects\CT_Website\backend'
+cd backend
 .\run_backend.ps1
 ```
 

@@ -3,11 +3,43 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import httpx
+import urllib.parse
+import time
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(title="Vietnam POI Helper API")
+
+# Activity logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    print(f"\n{'='*80}")
+    print(f"[{timestamp}] 📥 INCOMING REQUEST")
+    print(f"Method: {request.method}")
+    print(f"Path: {request.url.path}")
+    print(f"Client: {request.client.host if request.client else 'unknown'}")
+    
+    try:
+        response = await call_next(request)
+        duration = time.time() - start_time
+        
+        print(f"Status: {response.status_code}")
+        print(f"Duration: {duration:.3f}s")
+        print(f"✅ REQUEST COMPLETED")
+        print(f"{'='*80}\n")
+        
+        return response
+    except Exception as e:
+        duration = time.time() - start_time
+        print(f"❌ ERROR: {str(e)}")
+        print(f"Duration: {duration:.3f}s")
+        print(f"{'='*80}\n")
+        raise
 
 # Allow local origins - adjust in production
 app.add_middleware(
@@ -46,7 +78,10 @@ class PoiRequest(BaseModel):
 @app.post("/api/weather")
 async def proxy_weather(payload: WeatherRequest):
     """Proxy weather requests to OpenWeatherMap. Requires OPENWEATHERMAP_KEY in env."""
+    print(f"🌤️  Weather request for: lat={payload.lat}, lon={payload.lon}")
+    
     if not OPENWEATHER_KEY:
+        print("❌ Missing OPENWEATHERMAP_KEY")
         raise HTTPException(status_code=500, detail="Server missing OPENWEATHERMAP_KEY environment variable")
 
     url = (
@@ -54,13 +89,22 @@ async def proxy_weather(payload: WeatherRequest):
         f"&appid={OPENWEATHER_KEY}&units=metric"
     )
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.get(url)
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url)
 
-    if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail={"upstream_status": resp.status_code, "body": resp.text})
+        if resp.status_code != 200:
+            print(f"❌ Weather API error: {resp.status_code}")
+            raise HTTPException(status_code=502, detail={"upstream_status": resp.status_code, "body": resp.text})
 
-    return resp.json()
+        print(f"✅ Weather data retrieved successfully")
+        return resp.json()
+    except httpx.TimeoutException:
+        print("❌ Weather API timeout")
+        raise HTTPException(status_code=504, detail="Weather service timeout")
+    except Exception as e:
+        print(f"❌ Weather API error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Weather service error: {str(e)}")
 
 
 @app.post("/api/translate")
@@ -99,21 +143,31 @@ async def proxy_translate(payload: TranslateRequest):
 @app.post("/api/geocode")
 async def proxy_geocode(payload: GeocodeRequest):
     """Proxy Nominatim geocoding requests."""
+    print(f"📍 Geocode request for: '{payload.q}' (limit: {payload.limit})")
+    
     url = (
-        f"https://nominatim.openstreetmap.org/search?q={httpx.utils.quote(payload.q)}&format=json&limit={payload.limit}&addressdetails=1"
+        f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(payload.q)}&format=json&limit={payload.limit}&addressdetails=1"
     )
 
     headers = {"User-Agent": "VietnamPOIFinder/1.0"}
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.get(url, headers=headers)
-
-    if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail={"upstream_status": resp.status_code, "body": resp.text})
-
+    
     try:
-        return resp.json()
-    except Exception:
-        raise HTTPException(status_code=502, detail="Invalid JSON from geocode service")
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url, headers=headers)
+
+        if resp.status_code != 200:
+            print(f"❌ Geocode API error: {resp.status_code}")
+            raise HTTPException(status_code=502, detail={"upstream_status": resp.status_code, "body": resp.text})
+
+        result = resp.json()
+        print(f"✅ Found {len(result)} location(s)")
+        return result
+    except httpx.TimeoutException:
+        print("❌ Geocode API timeout")
+        raise HTTPException(status_code=504, detail="Geocode service timeout")
+    except Exception as e:
+        print(f"❌ Geocode error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Geocode service error: {str(e)}")
 
 
 @app.post("/api/poi")
@@ -122,6 +176,8 @@ async def proxy_poi(payload: PoiRequest):
     radius = payload.radius
     lat = payload.lat
     lon = payload.lon
+    
+    print(f"🗺️  POI request: lat={lat}, lon={lon}, radius={radius}m")
 
     overpass_query = f"""
       [out:json][timeout:25];
@@ -135,20 +191,19 @@ async def proxy_poi(payload: PoiRequest):
     """
 
     overpass_url = 'https://overpass-api.de/api/interpreter'
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(overpass_url, data={'data': overpass_query}, headers={"Content-Type": "application/x-www-form-urlencoded"})
-        except Exception as e:
-            r = None
-
-    if r and r.status_code == 200:
-        try:
+        
+        if r.status_code == 200:
             j = r.json()
             elements = j.get('elements', [])
             if elements:
+                print(f"✅ Found {len(elements)} POIs from Overpass")
                 return {"elements": elements}
-        except Exception:
-            pass
+    except Exception as e:
+        print(f"⚠️  Overpass API failed: {str(e)}, trying fallback...")
 
     # Fallback: use Nominatim nearby searches for common categories
     categories = ['restaurant', 'cafe', 'museum', 'park', 'hotel', 'shop']
@@ -160,7 +215,7 @@ async def proxy_poi(payload: PoiRequest):
             if len(results) >= 5:
                 break
             try:
-                search_url = f"https://nominatim.openstreetmap.org/search?q={httpx.utils.quote(category)}+near+{lat},{lon}&format=json&limit=3"
+                search_url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(category)}+near+{lat},{lon}&format=json&limit=3"
                 resp = await client.get(search_url, headers=headers)
                 if resp.status_code != 200:
                     continue

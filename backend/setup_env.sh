@@ -16,4 +16,4 @@ if [ ! -f .env ]; then
   fi
 fi
 
-echo "Virtualenv created in .venv and dependencies installed. Run: source .venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8001"
+echo "Virtualenv created in .venv and dependencies installed. Run: source .venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
