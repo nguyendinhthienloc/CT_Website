@@ -34,7 +34,7 @@ cd /workspaces/CT_Week5_24125093
 python3 -m http.server 8001
 
 # Open your browser and visit:
-# http://localhost:8001/index.html
+# http://localhost:8001/frontend/index.html
 ```
 <!-- Optional: you may use any static server, but the repo expects frontend on port 8001 -->
 
@@ -84,7 +84,7 @@ No registration is required to use `py-googletrans`. For production-grade transl
 
 ### Method 3: Open File Directly
 
-You can also open the `index.html` file directly in your browser (double-click), but using an HTTP server is recommended to avoid CORS errors.
+You can also open the `frontend/index.html` file directly in your browser (double-click), but using an HTTP server is recommended to avoid CORS errors.
 
 ## User Guide
 
@@ -113,10 +113,28 @@ You can try these locations:
 
 ```
 CT_Week5_24125093/
-├── index.html          # Main application (HTML + CSS + JavaScript)
-├── main.html           # Old Firebase demo
-├── README.md           # This documentation
-└── IMPROVEMENTS.md     # Detailed list of improvements made
+├── frontend/
+│   ├── index.html           # Main application (HTML + CSS + JavaScript)
+│   ├── pages/
+│   │   ├── main.html        # Firebase authentication demo
+│   │   └── test.html        # Backend connectivity test
+│   └── assets/              # Static assets (images, styles, etc.)
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── app.py               # Flask application (legacy)
+│   ├── requirements.txt     # Python dependencies
+│   ├── .env.example         # Environment variables template
+│   └── setup_env.sh         # Environment setup script
+├── docs/
+│   ├── FIREBASE_AUTH_GUIDE.md
+│   ├── IMPROVEMENTS.md
+│   ├── RUNNING.md
+│   ├── SERVICES_RUNNING.md
+│   ├── TEST_CHECKLIST.md
+│   ├── TESTING_STEPS.md
+│   └── Using py-googletrans for Translation.txt
+├── documents/               # Jupyter notebooks and lab materials
+└── README.md                # This documentation
 ```
 
 ## APIs Used
@@ -193,7 +211,7 @@ Terminal B — Frontend
   ```
 2. Open browser at:
   ```
-  http://localhost:8001/index.html
+  http://localhost:8001/frontend/index.html
   ```
 
 Notes:
