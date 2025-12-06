@@ -1,0 +1,17 @@
+nohup: ignoring input
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://10.0.12.59:5001
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 137-302-553
+127.0.0.1 - - [06/Dec/2025 16:38:11] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [06/Dec/2025 16:38:11] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [06/Dec/2025 16:38:30] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [06/Dec/2025 16:42:37] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [06/Dec/2025 16:50:09] "POST /translate HTTP/1.1" 200 -
+127.0.0.1 - - [06/Dec/2025 16:50:15] "GET / HTTP/1.1" 200 -

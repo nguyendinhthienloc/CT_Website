@@ -31,21 +31,12 @@ A web application that allows users to search for locations in Vietnam and displ
 cd /workspaces/CT_Week5_24125093
 
 # Run the server (Python 3)
-python3 -m http.server 8000
+python3 -m http.server 8001
 
 # Open your browser and visit:
-# http://localhost:8000/index.html
+# http://localhost:8001/index.html
 ```
-
-### Method 2: Using npx serve
-
-```bash
-# Run from the project directory
-npx serve . -l 5000
-
-# Open your browser and visit:
-# http://localhost:5000/index.html
-```
+<!-- Optional: you may use any static server, but the repo expects frontend on port 8001 -->
 
 ### Backend (optional, recommended for production)
 
@@ -72,16 +63,23 @@ pip install -r backend/requirements.txt
 cp backend/.env.example backend/.env
 # Edit backend/.env and set OPENWEATHERMAP_KEY (register at https://openweathermap.org/ if you don't have one)
 
-# 4) Run the app with uvicorn (listens on :8001 by default)
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8001
+# 4) Run the app with uvicorn (listens on :8000 for this project)
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Client changes (optional):
-- If you run the backend locally, change your client weather fetch to POST to `/api/weather` on your backend (e.g., `http://localhost:8001/api/weather`) instead of calling `api.openweathermap.org` directly.
+- If you run the backend locally, the client is already configured to call the backend API base at `http://localhost:8000` for `/api/*` endpoints. Do not expose OpenWeatherMap API keys to the browser.
 
 Registration notes (manual work):
 - OpenWeatherMap: create a free account and generate an API key at https://openweathermap.org/ — required to use the `/api/weather` endpoint.
 - LibreTranslate / Argos: public endpoints used by `/api/translate` are free and do not require keys, but public instances may rate-limit or impose CORS restrictions; if you need reliable translation, consider a self-hosted LibreTranslate or a paid translation API.
+
+Translation library (py-googletrans):
+- This backend can optionally use `py-googletrans` (`googletrans` package) for server-side translation without API keys. That library is included in `backend/requirements.txt` as `googletrans==3.1.0a0`.
+- `py-googletrans` is an unofficial wrapper and may break if Google changes their internal API. It is a good no-key option for development and light usage.
+- If `googletrans` is available, the backend will use it automatically for `/api/translate`. If it's not available or fails, the backend falls back to public LibreTranslate/Argos endpoints.
+
+No registration is required to use `py-googletrans`. For production-grade translation, consider a paid API (Google Cloud Translate, Azure Translator) and proxy the requests server-side with proper key management.
 
 
 ### Method 3: Open File Directly
@@ -165,3 +163,40 @@ CT Week 5 Project - Student ID: 24125093
 ## License
 
 MIT License - Free to use for educational and personal purposes.
+
+## Quick Two-Terminal Run (recommended)
+
+Run the project locally using two terminals:
+
+Terminal A — Backend
+
+1. Create virtual environment and install deps
+  ```bash
+  python -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt
+  ```
+2. Export env var(s):
+  ```bash
+  export OPENWEATHERMAP_KEY=YOUR_KEY
+  ```
+3. Start backend:
+  ```bash
+  python backend/main.py
+  # or:
+  uvicorn backend.main:app --host 0.0.0.0 --port 8000
+  ```
+
+Terminal B — Frontend
+
+1. Serve static files from project root:
+  ```bash
+  python -m http.server 8001
+  ```
+2. Open browser at:
+  ```
+  http://localhost:8001/index.html
+  ```
+
+Notes:
+
+* Backend API base URL: http://localhost:8000
+* Frontend static server: http://localhost:8001
