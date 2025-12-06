@@ -410,10 +410,10 @@
     // Detect environment and set API URLs
     const isCodespaces = window.location.hostname.includes('app.github.dev');
     const BACKEND_HOST = isCodespaces 
-      ? window.location.hostname.replace('-8000', '-8001')
-      : 'localhost:8001';
+      ? window.location.hostname.replace('-8001', '-8000')
+      : 'localhost:8000';
     const FLASK_HOST = isCodespaces 
-      ? window.location.hostname.replace('-8000', '-5001')
+      ? window.location.hostname.replace('-8001', '-5001')
       : 'localhost:5001';
     const BACKEND_PROTOCOL = isCodespaces ? 'https:' : 'http:';
     const API_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}`;
