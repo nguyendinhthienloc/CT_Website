@@ -1,0 +1,132 @@
+================================================================================
+QUICK START COMMANDS - Vietnam POI Finder
+================================================================================
+
+Quick reference for starting all services in separate terminals.
+
+================================================================================
+TERMINAL 1 - Frontend Server (Port 8001)
+================================================================================
+
+cd /workspaces/CT_Week5_24125093
+python3 -m http.server 8001
+
+Access at: http://localhost:8001/frontend/index.html
+
+================================================================================
+TERMINAL 2 - FastAPI Backend (Port 8000)
+================================================================================
+
+cd /workspaces/CT_Week5_24125093
+source .venv/bin/activate
+python backend/main.py
+
+OR:
+
+cd /workspaces/CT_Week5_24125093
+source .venv/bin/activate
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+API Base: http://localhost:8000
+Endpoints:
+  - GET  /api/weather?lat={lat}&lon={lon}
+  - POST /api/translate (body: {text, dest})
+
+================================================================================
+TERMINAL 3 - Flask Backend (Port 5001) [Optional/Legacy]
+================================================================================
+
+cd /workspaces/CT_Week5_24125093
+source .venv/bin/activate
+python backend/app.py
+
+API Base: http://localhost:5001
+
+================================================================================
+ONE-TIME SETUP (if not already done)
+================================================================================
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Set up environment variables (optional)
+cp backend/.env.example backend/.env
+# Edit backend/.env and add your OPENWEATHERMAP_KEY
+
+================================================================================
+KILL PROCESSES ON PORTS (if needed)
+================================================================================
+
+# Kill process on port 8001 (Frontend)
+lsof -ti :8001 | xargs kill -9
+
+# Kill process on port 8000 (FastAPI)
+lsof -ti :8000 | xargs kill -9
+
+# Kill process on port 5001 (Flask)
+lsof -ti :5001 | xargs kill -9
+
+# Kill all at once
+lsof -ti :8001,:8000,:5001 | xargs kill -9
+
+================================================================================
+START ALL SERVICES (For Codespaces/Dev Containers)
+================================================================================
+
+# Run this in 3 separate terminals, or use tmux/screen
+
+# Terminal 1
+python3 -m http.server 8001
+
+# Terminal 2  
+source .venv/bin/activate && python backend/main.py
+
+# Terminal 3 (optional)
+source .venv/bin/activate && python backend/app.py
+
+================================================================================
+TESTING COMMANDS
+================================================================================
+
+# Test Frontend
+curl http://localhost:8001/frontend/index.html
+
+# Test FastAPI Backend
+curl http://localhost:8000/
+
+# Test Weather API
+curl "http://localhost:8000/api/weather?lat=21.0285&lon=105.8542"
+
+# Test Translation API
+curl -X POST http://localhost:8000/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello","dest":"vi"}'
+
+# Test Flask Backend
+curl http://localhost:5001/
+
+================================================================================
+PORT REFERENCE
+================================================================================
+
+8001 - Frontend (Python HTTP Server)
+8000 - FastAPI Backend
+5001 - Flask Backend (Legacy)
+
+================================================================================
+NOTES
+================================================================================
+
+- Frontend works standalone without backends
+- Backend features (weather, translation) require API server running
+- OpenWeatherMap API key optional but recommended for weather features
+- py-googletrans used for translation (no API key needed)
+- All services can run simultaneously on different ports
+
+================================================================================
