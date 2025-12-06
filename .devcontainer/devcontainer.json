@@ -1,0 +1,37 @@
+{
+  "name": "Vietnam POI Finder",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  
+  // Configure ports to forward and make public by default
+  "forwardPorts": [8000, 8001, 5001],
+  "portsAttributes": {
+    "8000": {
+      "label": "FastAPI Backend",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    },
+    "8001": {
+      "label": "Frontend Server",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    },
+    "5001": {
+      "label": "Flask Backend (Legacy)",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    }
+  },
+  
+  // Install Python dependencies on container creation
+  "postCreateCommand": "pip install -r backend/requirements.txt",
+  
+  // VS Code extensions to install
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}
