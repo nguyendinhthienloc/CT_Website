@@ -416,43 +416,10 @@
     // OpenWeatherMap API key (free tier)
     const WEATHER_API_KEY = '4d8fb5b93d4af21d66a2948710284366'; // Demo KEY
     
-    // Detect environment and set API URLs (dynamic so browser can reach backend)
-    const isCodespaces = window.location.hostname.includes('app.github.dev');
-    let BACKEND_HOST;
-    if (isCodespaces) {
-      BACKEND_HOST = window.location.hostname.replace('-8001', '-8000');
-    } else {
-      BACKEND_HOST = window.location.hostname;
-    }
-
-    const BACKEND_PROTOCOL = window.location.protocol;
-
-    // If the page is served from port 8001 (frontend), point API to same host on port 8000.
-    // Otherwise default to port 8000 on the current host.
-    const API_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}${window.location.port ? (window.location.port === '8001' ? ':8000' : '') : ':8000'}`;
-
-    // Flask legacy backend (if needed) on port 5001 when frontend is on 8001
-    const FLASK_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}${window.location.port ? (window.location.port === '8001' ? ':5001' : '') : ':5001'}`;
-    
-    console.log('🌐 Environment detected:', isCodespaces ? 'GitHub Codespaces' : 'Local');
+    // Codespaces-friendly API base: map frontend host to backend host
+    const API_BASE = window.location.origin.replace("-8001.", "-8000.");
     console.log('🔧 API Base:', API_BASE);
-    console.log('🔧 Flask Base:', FLASK_BASE);
-    
-    // Test backend connectivity on load
-    (async () => {
-      try {
-        const flaskTest = await fetch(FLASK_BASE + '/').catch(e => ({ error: e.message }));
-        console.log('🧪 Flask connectivity:', flaskTest.error ? '❌ ' + flaskTest.error : '✅ Connected');
-      } catch (e) {
-        console.error('🧪 Flask test failed:', e.message);
-      }
-      try {
-        const fastapiTest = await fetch(API_BASE + '/').catch(e => ({ error: e.message }));
-        console.log('🧪 FastAPI connectivity:', fastapiTest.error ? '❌ ' + fastapiTest.error : '✅ Connected');
-      } catch (e) {
-        console.error('🧪 FastAPI test failed:', e.message);
-      }
-    })();
+    console.log(API_BASE);
     
     // Get DOM elements
     const searchBtn = document.getElementById('searchBtn');
@@ -988,7 +955,7 @@
     };
 
     // --- Translation feature (calls backend) ---
-    const TRANSLATE_API = `${FLASK_BASE}/translate`; // backend now runs on 5001
+    const TRANSLATE_API = `${API_BASE}/api/translate`;
     const translateBtn = document.getElementById('translateBtn');
     const clearTranslateBtn = document.getElementById('clearTranslateBtn');
     const translateInput = document.getElementById('translateInput');
@@ -1010,11 +977,12 @@
         const resp = await fetch(TRANSLATE_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ q: text, source: 'en', target: 'vi' })
         });
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Lỗi dịch');
-        translatedText.textContent = data.translated;
+        if (!resp.ok) throw new Error(data.detail || 'Lỗi dịch');
+        // FastAPI returns { translatedText: '...' }
+        translatedText.textContent = data.translatedText || data.translated || '';
         translateResult.classList.remove('hidden');
         logActivity('TRANSLATE_SUCCESS', { translated: data.translated });
       } catch (err) {
@@ -1311,8 +1279,7 @@
     resultBox.innerText = "Analyzing...";
 
     try {
-      // Use Codespaces forwarded origin: replace frontend host marker for Codespaces
-      const API_BASE = window.location.origin.replace("-8001.", "-8000.");
+      // use global API_BASE (Codespaces mapping applied globally)
 
       const response = await fetch(`${API_BASE}/api/hf`, {
         method: "POST",
