@@ -1,3 +1,10 @@
 Flask==2.3.3
 googletrans==3.1.0a0
 flask-cors==3.0.10
+
+# FastAPI + runtime dependencies for the HF proxy
+fastapi==0.100.0
+uvicorn[standard]==0.23.2
+python-dotenv==1.0.0
+httpx==0.24.1
+huggingface-hub==0.21.2

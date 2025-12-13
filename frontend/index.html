@@ -328,6 +328,15 @@
         </div>
       </div>
 
+      <!-- Simple Sentiment UI (AI) -->
+      <div class="mt-6 bg-white rounded-2xl p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold mb-3">Sentiment Analysis (AI)</h3>
+        <textarea id="sentiment-input" rows="3" style="width: 100%;" placeholder="Type a sentence to analyze sentiment..."></textarea>
+        <br><br>
+        <button id="sentiment-btn" class="px-4 py-2 bg-green-600 text-white rounded-xl">Analyze sentiment</button>
+        <p id="sentiment-result" style="font-weight: bold; margin-top: 8px;"></p>
+      </div>
+
       <!-- Weather Section -->
     <div id="weatherSection" class="hidden">
       <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-8 mb-6 border-2 border-blue-200">
@@ -407,17 +416,23 @@
     // OpenWeatherMap API key (free tier)
     const WEATHER_API_KEY = '4d8fb5b93d4af21d66a2948710284366'; // Demo KEY
     
-    // Detect environment and set API URLs
+    // Detect environment and set API URLs (dynamic so browser can reach backend)
     const isCodespaces = window.location.hostname.includes('app.github.dev');
-    const BACKEND_HOST = isCodespaces 
-      ? window.location.hostname.replace('-8001', '-8000')
-      : 'localhost:8000';
-    const FLASK_HOST = isCodespaces 
-      ? window.location.hostname.replace('-8001', '-5001')
-      : 'localhost:5001';
-    const BACKEND_PROTOCOL = isCodespaces ? 'https:' : 'http:';
-    const API_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}`;
-    const FLASK_BASE = `${BACKEND_PROTOCOL}//${FLASK_HOST}`;
+    let BACKEND_HOST;
+    if (isCodespaces) {
+      BACKEND_HOST = window.location.hostname.replace('-8001', '-8000');
+    } else {
+      BACKEND_HOST = window.location.hostname;
+    }
+
+    const BACKEND_PROTOCOL = window.location.protocol;
+
+    // If the page is served from port 8001 (frontend), point API to same host on port 8000.
+    // Otherwise default to port 8000 on the current host.
+    const API_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}${window.location.port ? (window.location.port === '8001' ? ':8000' : '') : ':8000'}`;
+
+    // Flask legacy backend (if needed) on port 5001 when frontend is on 8001
+    const FLASK_BASE = `${BACKEND_PROTOCOL}//${BACKEND_HOST}${window.location.port ? (window.location.port === '8001' ? ':5001' : '') : ':5001'}`;
     
     console.log('🌐 Environment detected:', isCodespaces ? 'GitHub Codespaces' : 'Local');
     console.log('🔧 API Base:', API_BASE);
@@ -1282,6 +1297,49 @@
         alert('Lỗi khi lưu: ' + error.message);
       }
     };
+  </script>
+  <script>
+  async function analyzeSentiment() {
+    const text = document.getElementById("sentiment-input").value;
+    const resultBox = document.getElementById("sentiment-result");
+
+    if (!text.trim()) {
+      resultBox.innerText = "Please enter some text.";
+      return;
+    }
+
+    resultBox.innerText = "Analyzing...";
+
+    try {
+      // Use Codespaces forwarded origin: replace frontend host marker for Codespaces
+      const API_BASE = window.location.origin.replace("-8001.", "-8000.");
+
+      const response = await fetch(`${API_BASE}/api/hf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputs: text })
+      });
+
+      const data = await response.json();
+
+      if (data.result && data.result.length > 0) {
+        const r = data.result[0];
+        resultBox.innerText = `Sentiment: ${r.label} (confidence: ${r.score.toFixed(2)})`;
+      } else {
+        resultBox.innerText = "Unexpected response format.";
+      }
+
+    } catch (err) {
+      resultBox.innerText = "Error connecting to AI service.";
+      console.error(err);
+    }
+  }
+
+  // wire the button to the function (keeps HTML onclick-free)
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('sentiment-btn');
+    if (btn) btn.addEventListener('click', analyzeSentiment);
+  });
   </script>
 </body>
 </html>

@@ -1,8 +1,39 @@
-nohup: ignoring input
-INFO:     Started server process [11245]
+INFO:     Will watch for changes in these directories: ['/workspaces/CT_Week5_24125093/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [34368] using StatReload
+INFO:     Started server process [34465]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     42.115.15.251:0 - "GET / HTTP/1.1" 200 OK
-INFO:     42.115.15.251:0 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:45528 - "GET /docs HTTP/1.1" 200 OK
+Loaded as API: https://locnguyen0304-hf-sentiment-api.hf.space ✔
+
+[2025-12-13 18:02:12] GET /
+STATUS 200 (0.001s)
+INFO:     127.0.0.1:52190 - "GET / HTTP/1.1" 200 OK
+
+[2025-12-13 18:05:54] GET /
+STATUS 200 (0.002s)
+INFO:     127.0.0.1:40644 - "GET / HTTP/1.1" 200 OK
+
+[2025-12-13 18:05:54] POST /api/hf
+STATUS 200 (3.791s)
+INFO:     127.0.0.1:40658 - "POST /api/hf HTTP/1.1" 200 OK
+
+[2025-12-13 18:05:58] POST /api/translate
+STATUS 502 (0.955s)
+INFO:     127.0.0.1:40668 - "POST /api/translate HTTP/1.1" 502 Bad Gateway
+
+[2025-12-13 18:06:04] POST /api/hf
+STATUS 200 (1.963s)
+INFO:     127.0.0.1:49982 - "POST /api/hf HTTP/1.1" 200 OK
+
+[2025-12-13 18:06:06] POST /api/translate
+STATUS 502 (2.421s)
+INFO:     127.0.0.1:49990 - "POST /api/translate HTTP/1.1" 502 Bad Gateway
+
+[2025-12-13 18:12:35] GET /
+STATUS 200 (0.003s)
+INFO:     127.0.0.1:44208 - "GET / HTTP/1.1" 200 OK
+
+[2025-12-13 18:12:40] GET /
+STATUS 200 (0.001s)
+INFO:     42.112.183.224:0 - "GET / HTTP/1.1" 200 OK

@@ -1,150 +1,116 @@
 ================================================================================
-QUICK START COMMANDS - Vietnam POI Finder
-================================================================================
+QUICK START COMMANDS — Vietnam POI Finder
+=========================================
 
-Quick reference for starting all services in separate terminals.
+This project uses **FastAPI only** as the backend.
+The legacy Flask backend has been **removed**.
 
 ================================================================================
-TERMINAL 1 - Frontend Server (Port 8001)
-================================================================================
+TERMINAL 1 — Frontend Server (Port 8001)
+========================================
 
 cd /workspaces/CT_Week5_24125093
 python3 -m http.server 8001
 
-Access at: http://localhost:8001/frontend/index.html
+Access at:
+[http://localhost:8001/frontend/index.html](http://localhost:8001/frontend/index.html)
 
 ================================================================================
-TERMINAL 2 - FastAPI Backend (Port 8000)
-================================================================================
+TERMINAL 2 — FastAPI Backend (Port 8000) [MAIN BACKEND]
+=======================================================
 
 cd /workspaces/CT_Week5_24125093
 source .venv/bin/activate
+
+# Option 1 — Run directly
+
 python backend/main.py
 
-OR:
+# Option 2 — Run with Uvicorn (recommended for development)
 
-cd /workspaces/CT_Week5_24125093
-source .venv/bin/activate
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
-API Base: http://localhost:8000
-Endpoints:
-  - GET  /api/weather?lat={lat}&lon={lon}
-  - POST /api/translate (body: {text, dest})
+API Base:
+[http://localhost:8000](http://localhost:8000)
+
+Available Endpoints:
+
+* GET  /api/weather?lat={lat}&lon={lon}
+* POST /api/translate   (body: {text, dest})
+* GET  /api/geocode
+* GET  /api/poi
 
 ================================================================================
-TERMINAL 3 - Flask Backend (Port 5001) [LEGACY - Not Required]
-================================================================================
-
-NOTE: This is the OLD translation-only backend. Use FastAPI (port 8000) instead.
-The Flask backend only provides basic translation and is kept for compatibility.
-
-cd /workspaces/CT_Week5_24125093
-source .venv/bin/activate
-python backend/app.py
-
-API Base: http://localhost:5001
-Endpoints:
-  - POST /translate (body: {text})
-
-WHY YOU DON'T NEED THIS:
-- FastAPI (port 8000) has all Flask features PLUS more (weather, geocode, POI)
-- Flask only does translation, FastAPI does everything
-- Only run Flask if testing legacy code
-
-================================================================================
-ONE-TIME SETUP (if not already done)
-================================================================================
+ONE-TIME SETUP (Run once)
+=========================
 
 # Create virtual environment
+
 python3 -m venv .venv
 
 # Activate virtual environment
+
 source .venv/bin/activate
 
 # Install dependencies
+
 pip install -r backend/requirements.txt
 
-# Set up environment variables (optional)
+# Set up environment variables (optional but recommended)
+
 cp backend/.env.example backend/.env
+
 # Edit backend/.env and add your OPENWEATHERMAP_KEY
 
 ================================================================================
-KILL PROCESSES ON PORTS (if needed)
-================================================================================
+START ALL SERVICES (Recommended)
+================================
 
-# Kill process on port 8001 (Frontend)
-lsof -ti :8001 | xargs kill -9
-================================================================================
-START ALL SERVICES (For Codespaces/Dev Containers)
-================================================================================
+# Terminal 1 — Frontend
 
-# You only need 2 terminals (Frontend + FastAPI Backend)
-
-# Terminal 1 - Frontend
 python3 -m http.server 8001
 
-# Terminal 2 - FastAPI Backend (Recommended)
+# Terminal 2 — FastAPI Backend
+
 source .venv/bin/activate && python backend/main.py
-
-# Terminal 3 - Flask Backend (Optional - Legacy only)
-# Only run if you need the old translation service
-# source .venv/bin/activate && python backend/app.py
-# Run this in 3 separate terminals, or use tmux/screen
-
-# Terminal 1
-python3 -m http.server 8001
-
-# Terminal 2  
-source .venv/bin/activate && python backend/main.py
-
-# Terminal 3 (optional)
-source .venv/bin/activate && python backend/app.py
 
 ================================================================================
 TESTING COMMANDS
-================================================================================
+================
 
-# Test Frontend
-curl http://localhost:8001/frontend/index.html
+# Test frontend
 
-# Test FastAPI Backend
-curl http://localhost:8000/
+curl [http://localhost:8001/frontend/index.html](http://localhost:8001/frontend/index.html)
+
+# Test FastAPI backend root
+
+curl [http://localhost:8000/](http://localhost:8000/)
+
+# Test translation endpoint
+
+curl -X POST [http://localhost:8000/api/translate](http://localhost:8000/api/translate) 
+-H "Content-Type: application/json" 
+-d '{"text": "Hello", "dest": "vi"}'
 
 ================================================================================
 PORT REFERENCE
-================================================================================
+==============
 
-8001 - Frontend (Python HTTP Server)
-8000 - FastAPI Backend (CURRENT - Use this one!)
-5001 - Flask Backend (LEGACY - Translation only, not needed)"vi"}'
+8001 — Frontend (Python HTTP Server)
+8000 — FastAPI Backend (ONLY backend used)
 
 ================================================================================
 NOTES
-================================================================================
+=====
 
-- Frontend works standalone without backends
-- FastAPI backend (port 8000) is the MAIN backend with all features:
-  * Weather API proxy (requires OpenWeatherMap key)
-  * Translation (py-googletrans, no key needed)
+* Frontend can load without the backend, but API features require FastAPI running
+* FastAPI backend provides:
+
+  * Weather API proxy (OpenWeatherMap key recommended)
+  * Translation (py-googletrans, no API key required)
   * Geocoding proxy
   * POI search proxy
-- Flask backend (port 5001) is LEGACY code:
-  * Only does translation
-  * Kept for backward compatibility
-  * You don't need to run it
-- OpenWeatherMap API key optional but recommended for weather features
-- All services can run simultaneously on different ports
-5001 - Flask Backend (Legacy)
-
-================================================================================
-NOTES
-================================================================================
-
-- Frontend works standalone without backends
-- Backend features (weather, translation) require API server running
-- OpenWeatherMap API key optional but recommended for weather features
-- py-googletrans used for translation (no API key needed)
-- All services can run simultaneously on different ports
+* Legacy Flask backend has been removed to simplify architecture
+* Only **two terminals** are required
 
 ================================================================================
